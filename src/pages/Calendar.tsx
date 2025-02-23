@@ -69,7 +69,7 @@ export function Calendar() {
             >
               {format(day, 'd')}
             </time>
-            {/* TODO: Add workout indicators */}
+            {/* TODO: Add workout indicators.  If you have a backend, you would fetch workout data for this date. */}
           </div>
         ))}
       </div>
@@ -79,7 +79,8 @@ export function Calendar() {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Workout for {format(selectedDate, 'MMMM d, yyyy')}
           </h3>
-          {/* TODO: Add workout details and logging interface */}
+          {/* TODO: Add workout details and logging interface.  This would likely involve fetching data
+              from your backend (if you have one) based on the selectedDate. */}
         </div>
       )}
     </div>

@@ -1,10 +1,13 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
-  signIn: (token: string) => Promise<void>;
+  signIn: (token: string) => Promise<void>; // Google Sign-In
+  signInWithEmail: (email: string, password: string) => Promise<void>; // Email/Password Sign-In
+  signUp: (email: string, password: string) => Promise<void>; // Email/Password Sign-Up
   signOut: () => Promise<void>;
   signInAsGuest: () => void;
 }
@@ -23,7 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Supabase getSession:', session); // Log the session
       if (session) {
         setUser({
           id: session.user.id,
@@ -40,7 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Supabase onAuthStateChange:', _event, session); // Log auth changes
       if (session) {
         setUser({
           id: session.user.id,
@@ -59,8 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (token: string) => {
-    console.log('Attempting to sign in with Google...');
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         queryParams: {
@@ -71,20 +71,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         redirectTo: window.location.origin,
       },
     });
-    console.log('Supabase signInWithOAuth data:', data); // Log the data
-    if (error) {
-      console.error('Supabase signInWithOAuth error:', error); // Log any errors
-      throw error;
-    }
+
+    if (error) throw error;
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          // You can add initial user metadata here, like trainingStartDate
+          training_start_date: new Date().toISOString(), // Example: Set initial training start date
+        }
+      }
+    });
+    if (error) throw error;
   };
 
   const signOut = async () => {
-    console.log('Attempting to sign out...');
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Supabase signOut error:', error);
-      throw error;
-    }
+    if (error) throw error;
     setUser(null);
   };
 
@@ -100,12 +115,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, signInAsGuest }}>
+    <AuthContext.Provider value={{ user, signIn, signInWithEmail, signUp, signOut, signInAsGuest }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// --- Corrected: Now exporting useAuth ---
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -1,11 +1,21 @@
+// src/pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
-import { Activity, Dumbbell, Award, RefreshCw, ChevronLeft, ChevronRight, TrendingUp, ArrowUp, BarChart } from 'lucide-react';
+import { Activity, Dumbbell, Award, RefreshCw, ChevronLeft, ChevronRight, TrendingUp, ArrowUp, BarChart, Lightbulb } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { HealthMetrics } from '../types';
+import { HealthMetrics, User } from '../types'; // Import User type
 import { workoutSchedule } from '../data/workouts';
 import { format, differenceInCalendarWeeks } from 'date-fns';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { createClient } from '@supabase/supabase-js';
 
-export function Dashboard() {
+// --- Insights Data Type ---
+interface InsightsData {
+  averageDailySteps: number;
+  weeklyWorkoutCompletionRate: number;
+  longestWorkoutStreak: number;
+}
+
+export default function Dashboard() { // CHANGED: Now a default export
   const { user } = useAuth();
   const [healthMetrics, setHealthMetrics] = useState<HealthMetrics>({
     steps: 0,
@@ -28,13 +38,106 @@ export function Dashboard() {
 
     const [currentProgressionIndex, setCurrentProgressionIndex] = useState(0); // 0, 1, or 2
 
+  // --- Insights Widget State ---
+  const [insightsData, setInsightsData] = useState<InsightsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+    // --- Simulate Fetching Insights Data ---
+    const fetchInsightsData = async (currentUser: User) => {
+        // --- Supabase Client (Initialized INSIDE the function) ---
+        const supabaseUrl = 'https://aojcvcnlnkrhkwulbpkn.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvamN2Y25sbmtyaGt3dWxicGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNDUwNTAsImV4cCI6MjA1NTkyMTA1MH0.07q_q4TT1ub-4p9iqjfy8vAKbuMt0AUZEOeXU6qvd7s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // --- Fetch data from Supabase ---
+      const { data, error: fetchError } = await supabase
+        .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+        .select('date, steps, workout_completed') // *** CHANGE THESE TO YOUR COLUMN NAMES ***
+        .eq('user_id', currentUser.id) // Filter by the current user's ID
+        .order('date', { ascending: false }); // Order by date (most recent first)
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!data || data.length === 0) {
+        setInsightsData(null); // No data found
+        return;
+      }
+
+      // --- Calculate Insights ---
+
+      // 1. Average Daily Steps (last 7 days)
+      const today = new Date();
+      const last7Days = data.filter(item => {
+          const itemDate = new Date(item.date);
+          const diffInDays = Math.floor((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
+          return diffInDays < 7;
+      });
+
+      const totalSteps = last7Days.reduce((sum, item) => sum + (item.steps || 0), 0);
+      const averageDailySteps = last7Days.length > 0 ? Math.round(totalSteps / last7Days.length) : 0;
+
+      // 2. Weekly Workout Completion Rate (last 7 days)
+      const completedWorkouts = last7Days.filter(item => item.workout_completed).length;
+      const weeklyWorkoutCompletionRate = last7Days.length > 0 ? Math.round((completedWorkouts / last7Days.length) * 100) : 0;
+
+      // 3. Longest Workout Streak (Simplified - Ideally done in SQL)
+      let longestWorkoutStreak = 0;
+      let currentStreak = 0;
+      for (const item of data) {
+        if (item.workout_completed) {
+          currentStreak++;
+        } else {
+          longestWorkoutStreak = Math.max(longestWorkoutStreak, currentStreak);
+          currentStreak = 0;
+        }
+      }
+      longestWorkoutStreak = Math.max(longestWorkoutStreak, currentStreak); // Check final streak
+
+
+      // --- Prepare data for Recharts ---
+      const chartData = [
+        { name: 'Avg. Daily Steps', value: averageDailySteps },
+        { name: 'Workout Completion %', value: weeklyWorkoutCompletionRate },
+        { name: 'Longest Streak', value: longestWorkoutStreak },
+      ];
+
+      setInsightsData({
+        averageDailySteps,
+        weeklyWorkoutCompletionRate,
+        longestWorkoutStreak,
+      });
+
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+    useEffect(() => {
+    if (user) { // Only fetch if user is logged in
+      fetchInsightsData(user);
+    }
+  }, [user]);
+
+
   // Helper function to initialize workout logs
-  const getInitialWorkoutLogs = (workouts: typeof workoutSchedule) => {
+  const getInitialWorkoutLogs = (workouts: typeof workoutSchedule, savedLogs: any) => {
+    if (savedLogs) {
+        return savedLogs.workouts || []; // Return saved logs if available
+    }
     return workouts.map((workout) => ({
       title: workout.title,
       exercises: workout.exercises.map((exercise) => ({
         name: exercise.split(':')[0].trim(),
-        sets: Array(parseInt(exercise.split('sets of')[0].split('sets')[0].trim(), 10) || 0).fill(''),
+        sets: Array(parseInt(exercise.split('sets of')[0].split('sets')[0].trim(), 10) || 0).fill(0), // Initialize with 0
       })),
     }));
   };
@@ -44,13 +147,38 @@ export function Dashboard() {
     const selectedDateString = format(new Date(), 'yyyy-MM-dd');
     const todaysWorkouts = workoutSchedule.filter((workout) => workout.day === selectedDay);
 
-    if (!workoutLogs[selectedDateString] && todaysWorkouts.length > 0) {
-      setWorkoutLogs((prevLogs) => ({
-        ...prevLogs,
-        [selectedDateString]: { workouts: getInitialWorkoutLogs(todaysWorkouts) },
-      }));
+    const fetchWorkoutLogs = async () => {
+        if (!user) return;
+
+        const supabaseUrl = 'https://aojcvcnlnkrhkwulbpkn.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvamN2Y25sbmtyaGt3dWxicGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNDUwNTAsImV4cCI6MjA1NTkyMTA1MH0.07q_q4TT1ub-4p9iqjfy8vAKbuMt0AUZEOeXU6qvd7s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data, error } = await supabase
+            .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+            .select('workout_logs')
+            .eq('user_id', user.id)
+            .eq('date', selectedDateString)
+            .single(); // Use .single() to get a single row or null
+
+        if (error) {
+            console.error("Error fetching workout logs:", error);
+            // Handle error appropriately, e.g., show an error message to the user
+        }
+
+        const savedLogs = data ? data.workout_logs : null;
+
+        if (!workoutLogs[selectedDateString] ) {
+            setWorkoutLogs((prevLogs) => ({
+                ...prevLogs,
+                [selectedDateString]: { workouts: getInitialWorkoutLogs(todaysWorkouts, savedLogs) },
+            }));
+        }
     }
-  }, [currentDayIndex, daysOfWeek, workoutLogs]);
+
+    fetchWorkoutLogs();
+
+  }, [currentDayIndex, daysOfWeek, user]);
 
   const nextDay = () => {
     setCurrentDayIndex((prevIndex) => (prevIndex + 1) % 7);
@@ -72,9 +200,63 @@ export function Dashboard() {
     });
   };
 
-  const handleSaveWorkout = () => {
-    console.log('Saving workout...');
-    console.log('Workout Logs:', workoutLogs);
+    const handleSaveWorkout = async () => {
+    if (!user) return;
+
+    const todayDateString = format(new Date(), 'yyyy-MM-dd');
+    const todaysLogs = workoutLogs[todayDateString];
+
+    if (!todaysLogs) {
+      console.warn("No workout logs to save for today.");
+      return;
+    }
+
+     const supabaseUrl = 'https://aojcvcnlnkrhkwulbpkn.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvamN2Y25sbmtyaGt3dWxicGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNDUwNTAsImV4cCI6MjA1NTkyMTA1MH0.07q_q4TT1ub-4p9iqjfy8vAKbuMt0AUZEOeXU6qvd7s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Check if a record for today already exists
+    const { data: existingData, error: fetchError } = await supabase
+      .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('date', todayDateString)
+      .single(); // Use .single() to get a single row or null
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("Error checking for existing workout data:", fetchError);
+      return;
+    }
+
+    try {
+      if (existingData) {
+        // Update existing record
+        const { error } = await supabase
+          .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+          .update({ workout_logs: todaysLogs })
+          .eq('id', existingData.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+          .insert([
+            {
+              user_id: user.id,
+              date: todayDateString,
+              workout_logs: todaysLogs,
+              // Add other fields as needed (e.g., steps, if you're tracking them here)
+            },
+          ]);
+
+        if (error) throw error;
+      }
+      console.log('Workout saved successfully!');
+    } catch (error: any) {
+      console.error('Error saving workout:', error);
+      // Handle error appropriately, e.g., show an error message to the user
+    }
   };
 
 
@@ -99,11 +281,9 @@ export function Dashboard() {
       updatedSets[setIndex] = isNaN(parseInt(value)) ? 0 : parseInt(value, 10);
       updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], sets: updatedSets };
       updatedWorkouts[workoutIndex] = { ...updatedWorkouts[workoutIndex], exercises: updatedExercises };
+        updatedLogs[todayDateString] = { workouts: updatedWorkouts };
 
-      return {
-        ...updatedLogs,
-        [todayDateString]: { workouts: updatedWorkouts },
-      };
+      return updatedLogs;
     });
   };
 
@@ -166,8 +346,13 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Health Metrics */}
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        {/* Health Metrics Widgets (Top Row) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+
+                {/* Health Metrics */}
+
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 col-span-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Today's Health Metrics</h2>
           <button
@@ -208,6 +393,9 @@ export function Dashboard() {
           </div>
         </div>
       </section>
+      </div>
+
+
 
       {/* Today's Workout */}
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -322,6 +510,44 @@ export function Dashboard() {
           ))}
         </div>
       </section>
+
+      {/* Insights Widget (Bottom) */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <Lightbulb className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Insights</h2>
+          </div>
+          {isLoading ? (
+            <p className="text-gray-500 dark:text-gray-400">Loading insights...</p>
+          ) : error ? (
+            <p className="text-red-500 dark:text-red-400">Error: {error}</p>
+          ) : insightsData ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <RechartsBarChart
+                data={[
+                  { name: 'Avg. Daily Steps', value: insightsData.averageDailySteps },
+                  { name: 'Workout Completion %', value: insightsData.weeklyWorkoutCompletionRate },
+                  { name: 'Longest Streak', value: insightsData.longestWorkoutStreak },
+                ]}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" stroke="#6b7280" />
+                <YAxis stroke="#6b7280"/>
+                <Tooltip contentStyle={{ backgroundColor: '#374151', borderColor: '#6b7280', color: '#fff' }} />
+                <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                <Bar dataKey="value" fill="#818cf8" />
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">No insights data available.</p>
+          )}
+        </section>
     </div>
   );
 }
