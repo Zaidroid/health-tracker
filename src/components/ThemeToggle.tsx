@@ -1,8 +1,17 @@
 import { useThemeStore } from '../stores/themeStore';
 import { Sun, Moon } from 'lucide-react';
+import { useEffect } from 'react';
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useThemeStore();
+
+  // --- KEY CHANGE: useEffect now ONLY sets the <html> class ---
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const initialTheme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    // No setTheme call here!
+    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+  }, []); // Run only once on mount
 
   return (
     <button

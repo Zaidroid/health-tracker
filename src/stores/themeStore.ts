@@ -6,12 +6,12 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  theme: localStorage.getItem('theme') === 'dark' ? 'dark' : 'light', // Load from localStorage
+  theme: 'light', // Initial value doesn't matter, will be overridden
   toggleTheme: () =>
     set((state) => {
       const newTheme = state.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('theme', newTheme); // Save to localStorage
-      document.documentElement.classList.toggle('dark', newTheme === 'dark'); // Add/remove 'dark' class
+      localStorage.setItem('theme', newTheme);
+      document.documentElement.classList.toggle('dark', newTheme === 'dark'); // KEY CHANGE: Update <html> class here
       return { theme: newTheme };
     }),
 }));

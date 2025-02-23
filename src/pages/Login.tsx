@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ThemeToggle } from '../components/ThemeToggle'; // Import ThemeToggle
 
 export function Login() {
   const { signIn, user, signInAsGuest } = useAuth();
@@ -23,6 +24,11 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* --- KEY CHANGE: Add ThemeToggle here --- */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Activity className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
