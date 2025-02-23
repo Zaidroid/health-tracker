@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { Activity, Calendar as CalendarIcon, LogOut, Dumbbell, MenuIcon } from 'lucide-react';
+import { Outlet, Link } from 'react-router-dom';
+import { Activity, Calendar as CalendarIcon, LogOut, Dumbbell, MenuIcon, Utensils } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Layout() {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
     // Add overflow-x-hidden to body when mobile menu is open
     document.body.classList.toggle('overflow-x-hidden', mobileMenuOpen);
 
@@ -20,10 +16,10 @@ export function Layout() {
     return () => {
       document.body.classList.remove('overflow-x-hidden');
     };
-  }, [user, navigate, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   if (!user) {
-    return null;
+    return null; // Or a loading indicator
   }
 
   return (
@@ -74,6 +70,13 @@ export function Layout() {
                     <Dumbbell className="h-4 w-4 mr-1" />
                     Workouts
                   </Link>
+                  <Link
+                    to="/nutrition"
+                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
+                  >
+                    <Utensils className="h-4 w-4 mr-1" /> {/* Add Utensils icon */}
+                    Nutrition
+                  </Link>
                 </div>
               </div>
             </div>
@@ -117,6 +120,13 @@ export function Layout() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Workouts
+                  </Link>
+                  <Link
+                    to="/nutrition"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Nutrition
                   </Link>
                   <button
                       onClick={() => {signOut(); setMobileMenuOpen(false);}}

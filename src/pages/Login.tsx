@@ -1,4 +1,3 @@
-// src/pages/Login.tsx
 import React, { useEffect, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +6,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 
 export function Login() {
   const { signIn, user, signInAsGuest, signInWithEmail, signUp } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Call useNavigate at the top level
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

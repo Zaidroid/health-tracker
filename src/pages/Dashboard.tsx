@@ -155,15 +155,14 @@ export default function Dashboard() { // CHANGED: Now a default export
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         const { data, error } = await supabase
-            .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+            .from('user_metrics')
             .select('workout_logs')
             .eq('user_id', user.id)
             .eq('date', selectedDateString)
-            .single(); // Use .single() to get a single row or null
+            .single();
 
         if (error) {
             console.error("Error fetching workout logs:", error);
-            // Handle error appropriately, e.g., show an error message to the user
         }
 
         const savedLogs = data ? data.workout_logs : null;
@@ -191,11 +190,11 @@ export default function Dashboard() { // CHANGED: Now a default export
   const handleSyncGoogleFit = async () => {
     console.log('Syncing with Google Fit... (Full implementation requires a backend)');
 
-    // Simulate fetching data.  This is NOT real Google Fit data.
+    // Simulate fetching data.
     setHealthMetrics({
-      steps: Math.floor(Math.random() * 5000) + 5000, // Random steps between 5000 and 10000
-      caloriesBurned: Math.floor(Math.random() * 500) + 200, // Random calories between 200 and 700
-      activeMinutes: Math.floor(Math.random() * 30) + 30, // Random active minutes between 30 and 60
+      steps: Math.floor(Math.random() * 5000) + 5000,
+      caloriesBurned: Math.floor(Math.random() * 500) + 200,
+      activeMinutes: Math.floor(Math.random() * 30) + 30,
       lastSynced: new Date(),
     });
   };
@@ -215,13 +214,12 @@ export default function Dashboard() { // CHANGED: Now a default export
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvamN2Y25sbmtyaGt3dWxicGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNDUwNTAsImV4cCI6MjA1NTkyMTA1MH0.07q_q4TT1ub-4p9iqjfy8vAKbuMt0AUZEOeXU6qvd7s';
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Check if a record for today already exists
     const { data: existingData, error: fetchError } = await supabase
-      .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+      .from('user_metrics')
       .select('id')
       .eq('user_id', user.id)
       .eq('date', todayDateString)
-      .single(); // Use .single() to get a single row or null
+      .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
       console.error("Error checking for existing workout data:", fetchError);
@@ -232,7 +230,7 @@ export default function Dashboard() { // CHANGED: Now a default export
       if (existingData) {
         // Update existing record
         const { error } = await supabase
-          .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+          .from('user_metrics')
           .update({ workout_logs: todaysLogs })
           .eq('id', existingData.id);
 
@@ -240,13 +238,12 @@ export default function Dashboard() { // CHANGED: Now a default export
       } else {
         // Insert new record
         const { error } = await supabase
-          .from('user_metrics') // *** CHANGE THIS TO YOUR TABLE NAME ***
+          .from('user_metrics')
           .insert([
             {
               user_id: user.id,
               date: todayDateString,
               workout_logs: todaysLogs,
-              // Add other fields as needed (e.g., steps, if you're tracking them here)
             },
           ]);
 
@@ -255,19 +252,23 @@ export default function Dashboard() { // CHANGED: Now a default export
       console.log('Workout saved successfully!');
     } catch (error: any) {
       console.error('Error saving workout:', error);
-      // Handle error appropriately, e.g., show an error message to the user
     }
   };
 
 
   const todayDateString = format(new Date(), 'yyyy-MM-dd');
 
-    const handleInputChange = (
+  const handleInputChange = (
     workoutIndex: number,
     exerciseIndex: number,
     setIndex: number,
     value: string
   ) => {
+    // --- Input Validation: Only allow numbers or empty string ---
+    if (!/^\d*$/.test(value)) {
+        return; // Exit if the input is not a number
+    }
+
     setWorkoutLogs((prevLogs) => {
       const updatedLogs = { ...prevLogs };
       const todayLogs = updatedLogs[todayDateString];
@@ -278,10 +279,10 @@ export default function Dashboard() { // CHANGED: Now a default export
       const updatedExercises = [...updatedWorkouts[workoutIndex].exercises];
       const updatedSets = [...updatedExercises[exerciseIndex].sets];
 
-      updatedSets[setIndex] = isNaN(parseInt(value)) ? 0 : parseInt(value, 10);
+      updatedSets[setIndex] = value === '' ? 0 : parseInt(value, 10); // Allow empty string
       updatedExercises[exerciseIndex] = { ...updatedExercises[exerciseIndex], sets: updatedSets };
       updatedWorkouts[workoutIndex] = { ...updatedWorkouts[workoutIndex], exercises: updatedExercises };
-        updatedLogs[todayDateString] = { workouts: updatedWorkouts };
+      updatedLogs[todayDateString] = { workouts: updatedWorkouts };
 
       return updatedLogs;
     });
@@ -289,13 +290,12 @@ export default function Dashboard() { // CHANGED: Now a default export
 
   const todaysWorkouts = workoutSchedule.filter((workout) => workout.day === daysOfWeek[currentDayIndex]);
 
-    // Functions for Weekly Progress Navigation
     const nextWeek = () => {
         setCurrentProgressionIndex((prevIndex) => (prevIndex + 1) % 3);
     };
 
     const previousWeek = () => {
-        setCurrentProgressionIndex((prevIndex) => (prevIndex + 2) % 3); // Wrap around and ensure positive
+        setCurrentProgressionIndex((prevIndex) => (prevIndex + 2) % 3);
     };
 
     const getWeekPeriodTitle = (index: number) => {
@@ -332,14 +332,12 @@ export default function Dashboard() { // CHANGED: Now a default export
         }
       };
 
-    // Calculate current week (1-6) based on training start date and currentWeekIndex
     const getCurrentWeek = () => {
         if (!user) return 1;
         const startDate = new Date(user.trainingStartDate);
         const today = new Date();
-        // Calculate the week number and adjust for the progression index
         let weekNumber = ((differenceInCalendarWeeks(today, startDate) % 6) + 1 + currentProgressionIndex) % 6;
-        return weekNumber === 0 ? 6 : weekNumber; // Ensure week number is between 1 and 6
+        return weekNumber === 0 ? 6 : weekNumber;
     };
 
     const currentWeek = getCurrentWeek();
@@ -428,22 +426,23 @@ export default function Dashboard() { // CHANGED: Now a default export
                 <div key={exerciseIndex} className="mb-2">
                   <p className="text-gray-700 dark:text-gray-300">{exercise.split(':')[0].trim()}</p>
                   <div className="flex space-x-2">
+                    {/* Display input fields for each set */}
                     {workoutLogs[todayDateString]?.workouts[workoutIndex]?.exercises[exerciseIndex]?.sets.map((set, setIndex) => (
                       <input
                         key={setIndex}
                         type="number"
                         placeholder={`Set ${setIndex + 1}`}
                         className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-                        value={
+                        value={  // *** FIX: Use || instead of ?? ***
                           workoutLogs[todayDateString]?.workouts[workoutIndex]?.exercises[exerciseIndex]?.sets[
                             setIndex
-                          ] ?? ''
+                          ] || ''
                         }
                         onChange={(e) =>
                           handleInputChange(workoutIndex, exerciseIndex, setIndex, e.target.value)
                         }
                       />
-                    )) ||  Array(parseInt((exercise.match(/(\d+)\s+sets/) || [])[1] || '0', 10)).fill('').map((_, setIndex) => (
+                    )) || Array(parseInt((exercise.match(/(\d+)\s+sets/) || [])[1] || '0', 10)).fill('').map((_, setIndex) => (
                         <input
                         key={setIndex}
                         type="number"
