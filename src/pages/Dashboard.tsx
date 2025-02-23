@@ -38,46 +38,6 @@ export function Dashboard() {
       })),
     }));
   };
-    
-    //Gets the week period title
-    const getWeekPeriodTitle = (index: number) => {
-    switch (index) {
-      case 0:
-        return 'Week 1-2';
-      case 1:
-        return 'Week 3-4';
-      case 2:
-        return 'Week 5-6';
-      default:
-        return ''; 
-    }
-  };
-
-    //Gets the goals of a week period
-    const getProgressionGoals = (index: number) => {
-    switch (index) {
-      case 0:
-        return [
-          "Push-ups: 3x10-15",
-          "Pull-ups: 3x3-5",
-          "Planks: 3x20-30 sec"
-        ];
-      case 1:
-        return [
-          "Push-ups: 3x15-20",
-          "Pull-ups: 3x4-6",
-          "Planks: 3x30-45 sec"
-        ];
-      case 2:
-        return [
-          "Push-ups: 3x20+",
-          "Pull-ups: 3x5-7",
-          "Planks: 3x45-60 sec"
-        ];
-      default:
-        return [];
-    }
-  };
 
   useEffect(() => {
     const selectedDay = daysOfWeek[currentDayIndex];
@@ -100,14 +60,6 @@ export function Dashboard() {
     setCurrentDayIndex((prevIndex) => (prevIndex - 1 + 7) % 7);
   };
 
-    const nextWeek = () => {
-    setCurrentProgressionIndex((prevIndex) => (prevIndex + 1) % 3);
-  };
-
-  const previousWeek = () => {
-    setCurrentProgressionIndex((prevIndex) => (prevIndex + 2) % 3);
-  };
-
   const handleSyncGoogleFit = async () => {
     console.log('Syncing with Google Fit...');
   };
@@ -117,12 +69,6 @@ export function Dashboard() {
     console.log('Workout Logs:', workoutLogs);
   };
 
-
-  const progressData = [
-    { date: '2025-02-10', pushups: 10, planks: 20 },
-    { date: '2025-02-11', pushups: 12, planks: 25 },
-    { date: '2025-02-12', pushups: 13, planks: 30 },
-  ];
 
   const todayDateString = format(new Date(), 'yyyy-MM-dd');
 
@@ -155,13 +101,57 @@ export function Dashboard() {
 
   const todaysWorkouts = workoutSchedule.filter((workout) => workout.day === daysOfWeek[currentDayIndex]);
 
+    // Functions for Weekly Progress Navigation
+    const nextWeek = () => {
+        setCurrentProgressionIndex((prevIndex) => (prevIndex + 1) % 3);
+    };
+
+    const previousWeek = () => {
+        setCurrentProgressionIndex((prevIndex) => (prevIndex + 2) % 3); // Wrap around and ensure positive
+    };
+
+    const getWeekPeriodTitle = (index: number) => {
+        switch (index) {
+            case 0: return 'Week 1-2';
+            case 1: return 'Week 3-4';
+            case 2: return 'Week 5-6';
+            default: return '';
+        }
+    };
+
+    const getProgressionGoals = (index: number) => {
+        switch (index) {
+          case 0:
+            return [
+              "Push-ups: 3x10-15",
+              "Pull-ups: 3x3-5",
+              "Planks: 3x20-30 sec"
+            ];
+          case 1:
+            return [
+              "Push-ups: 3x15-20",
+              "Pull-ups: 3x4-6",
+              "Planks: 3x30-45 sec"
+            ];
+          case 2:
+            return [
+              "Push-ups: 3x20+",
+              "Pull-ups: 3x5-7",
+              "Planks: 3x45-60 sec"
+            ];
+          default:
+            return [];
+        }
+      };
+
     // Calculate current week (1-6) based on training start date and currentWeekIndex
     const getCurrentWeek = () => {
         if (!user) return 1;
         const startDate = new Date(user.trainingStartDate);
         const today = new Date();
-        const weekNumber = ((differenceInCalendarWeeks(today, startDate) % 6) + 1 + currentProgressionIndex) % 6;
-        return weekNumber === 0? 6 : weekNumber;
+        // Calculate the week number and adjust for the progression index
+        let weekNumber = ((differenceInCalendarWeeks(today, startDate) % 6) + 1 + currentProgressionIndex) % 6;
+        return weekNumber === 0 ? 6 : weekNumber; // Ensure week number is between 1 and 6
     };
 
     const currentWeek = getCurrentWeek();
@@ -174,14 +164,14 @@ export function Dashboard() {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Today's Health Metrics</h2>
           <button
             onClick={handleSyncGoogleFit}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 active:bg-indigo-800"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync with Google Fit
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
             <div className="flex items-center">
               <Activity className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               <div className="ml-4">
@@ -190,7 +180,7 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
             <div className="flex items-center">
               <Dumbbell className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               <div className="ml-4">
@@ -199,7 +189,7 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
             <div className="flex items-center">
               <Award className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               <div className="ml-4">
@@ -279,7 +269,7 @@ export function Dashboard() {
         )}
         <button
             onClick={handleSaveWorkout}
-            className="w-full mt-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700"
+            className="w-full mt-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700 active:bg-indigo-800"
           >
             Save Workout
           </button>
@@ -310,9 +300,8 @@ export function Dashboard() {
         <p className="text-gray-700 dark:text-gray-300 mb-6">{getWeekPeriodTitle(currentProgressionIndex)}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {getProgressionGoals(currentProgressionIndex).map((goal, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
               <div className="flex items-center">
-                {/* Placeholder icons - replace with more specific ones if available */}
                 {goal.includes('Push-ups') && <TrendingUp className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
                 {goal.includes('Pull-ups') && <ArrowUp className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
                 {goal.includes('Planks') && <BarChart className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}

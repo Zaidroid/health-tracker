@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"  # The build command
+  publish = "dist"          # The directory to deploy (Vite's default output)
+
+# You can *declare* environment variables here, but you MUST set their values in the Netlify UI.
+[context.production.environment]
+  VITE_SUPABASE_URL = ""  # Leave this empty here; set the value in Netlify UI
+  VITE_SUPABASE_ANON_KEY = "" # Leave this empty here; set the value in Netlify UI

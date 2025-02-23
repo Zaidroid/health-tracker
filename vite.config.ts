@@ -7,4 +7,6 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  // base: '/your-app/', // Use this if deploying to a subdirectory.  Change 'your-app' to your app's name.
+  // OMIT the 'base' option if deploying to the root of a domain.
 });

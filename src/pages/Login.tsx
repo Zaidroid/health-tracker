@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ThemeToggle } from '../components/ThemeToggle'; // Import ThemeToggle
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export function Login() {
   const { signIn, user, signInAsGuest } = useAuth();
@@ -24,7 +24,6 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* --- KEY CHANGE: Add ThemeToggle here --- */}
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
@@ -46,7 +45,7 @@ export function Login() {
           <div>
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700 active:bg-indigo-800"
             >
               Sign in with Google
             </button>
@@ -54,7 +53,7 @@ export function Login() {
           <div className="mt-4">
             <button
               onClick={signInAsGuest}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700"
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700 active:bg-gray-100 dark:active:bg-gray-800"
             >
               Sign in as Guest
             </button>
