@@ -61,7 +61,15 @@ export function Dashboard() {
   };
 
   const handleSyncGoogleFit = async () => {
-    console.log('Syncing with Google Fit...');
+    console.log('Syncing with Google Fit... (Full implementation requires a backend)');
+
+    // Simulate fetching data.  This is NOT real Google Fit data.
+    setHealthMetrics({
+      steps: Math.floor(Math.random() * 5000) + 5000, // Random steps between 5000 and 10000
+      caloriesBurned: Math.floor(Math.random() * 500) + 200, // Random calories between 200 and 700
+      activeMinutes: Math.floor(Math.random() * 30) + 30, // Random active minutes between 30 and 60
+      lastSynced: new Date(),
+    });
   };
 
   const handleSaveWorkout = () => {

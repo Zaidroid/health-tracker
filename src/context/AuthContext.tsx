@@ -6,17 +6,14 @@ interface AuthContextType {
   user: User | null;
   signIn: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signInAsGuest: () => void; // Add signInAsGuest
+  signInAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please connect to Supabase using the "Connect to Supabase" button in the top right.');
-}
+// Use the provided Supabase URL and Anon Key
+const supabaseUrl = 'https://aojcvcnlnkrhkwulbpkn.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvamN2Y25sbmtyaGt3dWxicGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNDUwNTAsImV4cCI6MjA1NTkyMTA1MH0.07q_q4TT1ub-4p9iqjfy8vAKbuMt0AUZEOeXU6qvd7s';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -26,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Supabase getSession:', session); // Log the session
       if (session) {
         setUser({
           id: session.user.id,
@@ -33,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: session.user.user_metadata.full_name,
           googleToken: session.provider_token!,
           trainingStartDate: new Date(session.user.user_metadata.training_start_date),
-          isGuest: false, // Ensure isGuest is set for authenticated users
+          isGuest: false,
         });
       }
     });
@@ -42,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Supabase onAuthStateChange:', _event, session); // Log auth changes
       if (session) {
         setUser({
           id: session.user.id,
@@ -49,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: session.user.user_metadata.full_name,
           googleToken: session.provider_token!,
           trainingStartDate: new Date(session.user.user_metadata.training_start_date),
-          isGuest: false, // Ensure isGuest is set for authenticated users
+          isGuest: false,
         });
       } else {
         setUser(null);
@@ -60,7 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (token: string) => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    console.log('Attempting to sign in with Google...');
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         queryParams: {
@@ -71,13 +71,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         redirectTo: window.location.origin,
       },
     });
-
-    if (error) throw error;
+    console.log('Supabase signInWithOAuth data:', data); // Log the data
+    if (error) {
+      console.error('Supabase signInWithOAuth error:', error); // Log any errors
+      throw error;
+    }
   };
 
   const signOut = async () => {
+    console.log('Attempting to sign out...');
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase signOut error:', error);
+      throw error;
+    }
     setUser(null);
   };
 
